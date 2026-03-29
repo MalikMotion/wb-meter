@@ -92,27 +92,30 @@
     transform: translate(-50%, -50%);
     width: 60px;
     height: 60px;
-    border: 1.5px solid rgba(255,255,255,0.7);
-    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.85);
+    border-radius: 4px;
+    transition: width 0.15s, height 0.15s;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
   }
 
+  /* Corner ticks on sample box */
   .crosshair-ring::before,
   .crosshair-ring::after {
     content: '';
     position: absolute;
-    background: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.85);
   }
   .crosshair-ring::before {
     width: 1px;
-    height: 20px;
-    top: -24px;
+    height: 12px;
+    top: -16px;
     left: 50%;
     transform: translateX(-50%);
   }
   .crosshair-ring::after {
     height: 1px;
-    width: 20px;
-    left: -24px;
+    width: 12px;
+    left: -16px;
     top: 50%;
     transform: translateY(-50%);
   }
@@ -383,8 +386,72 @@
     text-align: center;
   }
 
-  /* Camera controls */
-  .controls {
+  /* Sample area slider */
+  .sample-slider-section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .slider-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .slider-value {
+    font-family: 'Syne Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+
+  .slider-track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-tick-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'Syne Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent) var(--pct, 10%), var(--border) var(--pct, 10%));
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 6px rgba(200,169,110,0.4);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+
+  input[type=range]:active::-webkit-slider-thumb {
+    transform: scale(1.2);
+  }
     padding: 0 16px 16px;
     display: flex;
     gap: 8px;
@@ -649,6 +716,19 @@
       </div>
     </div>
 
+    <!-- Sample area slider -->
+    <div class="sample-slider-section">
+      <div class="slider-header">
+        <div class="slider-label">Samplingsområde</div>
+        <div class="slider-value" id="sliderDisplay">Punkt (20px)</div>
+      </div>
+      <div class="slider-track">
+        <span class="slider-tick-label">Punkt</span>
+        <input type="range" id="sampleSlider" min="1" max="5" value="1" step="1" oninput="onSliderChange(this.value)">
+        <span class="slider-tick-label">Fuld</span>
+      </div>
+    </div>
+
     <!-- WB presets -->
     <div class="presets-section">
       <div class="presets-label">WB Presets reference</div>
@@ -722,6 +802,46 @@ let currentStream = null;
 let fpsCounter = 0;
 let fpsTime = Date.now();
 let currentCCT = 0;
+let sampleMode = 1; // 1=point, 2=small, 3=medium, 4=large, 5=full
+
+const sampleModes = [
+  { label: 'Punkt (20px)',    pct: 0.015 },
+  { label: 'Lille (10%)',     pct: 0.10  },
+  { label: 'Medium (25%)',    pct: 0.25  },
+  { label: 'Stor (50%)',      pct: 0.50  },
+  { label: 'Fuld billede',    pct: 1.0   },
+];
+
+function onSliderChange(val) {
+  sampleMode = parseInt(val);
+  const mode = sampleModes[sampleMode - 1];
+  document.getElementById('sliderDisplay').textContent = mode.label;
+
+  // Update slider gradient fill
+  const slider = document.getElementById('sampleSlider');
+  const pct = ((sampleMode - 1) / 4) * 100;
+  slider.style.setProperty('--pct', pct + '%');
+
+  // Update visual sample box on video overlay
+  updateSampleBox();
+}
+
+function updateSampleBox() {
+  const ring = document.querySelector('.crosshair-ring');
+  const camWrap = document.querySelector('.camera-wrap');
+  const wrapW = camWrap.offsetWidth;
+  const wrapH = camWrap.offsetHeight;
+
+  const mode = sampleModes[sampleMode - 1];
+  if (mode.pct >= 1.0) {
+    ring.style.width = (wrapW - 16) + 'px';
+    ring.style.height = (wrapH - 16) + 'px';
+  } else {
+    const size = Math.round(Math.min(wrapW, wrapH) * mode.pct);
+    ring.style.width = Math.max(20, size) + 'px';
+    ring.style.height = Math.max(20, size) + 'px';
+  }
+}
 
 async function startCamera() {
   try {
@@ -745,6 +865,7 @@ async function startCamera() {
       document.getElementById('switchBtn').style.display = 'flex';
       document.getElementById('statusDot').classList.remove('off');
       document.getElementById('statusText').textContent = 'Live';
+      updateSampleBox();
       if (animId) cancelAnimationFrame(animId);
       measure();
     };
@@ -778,22 +899,45 @@ function measure() {
     }
   }
 
-  // Sample center region (10x10 pixels)
-  const cx = Math.floor(canvas.width / 2);
-  const cy = Math.floor(canvas.height / 2);
-  const sampleSize = 20;
-  const x = Math.max(0, cx - sampleSize/2);
-  const y = Math.max(0, cy - sampleSize/2);
-  const imgData = ctx.getImageData(x, y, sampleSize, sampleSize);
+  // Determine sample region based on sampleMode
+  const mode = sampleModes[sampleMode - 1];
+  let sx, sy, sw, sh;
+
+  if (mode.pct >= 1.0) {
+    sx = 0; sy = 0; sw = canvas.width; sh = canvas.height;
+  } else {
+    sw = Math.max(4, Math.round(Math.min(canvas.width, canvas.height) * mode.pct));
+    sh = sw;
+    sx = Math.floor((canvas.width - sw) / 2);
+    sy = Math.floor((canvas.height - sh) / 2);
+  }
+
+  const imgData = ctx.getImageData(sx, sy, sw, sh);
   const data = imgData.data;
 
   let r = 0, g = 0, b = 0, count = 0;
-  for (let i = 0; i < data.length; i += 4) {
+
+  // For large areas: skip pixels for performance (stride sampling)
+  const stride = mode.pct >= 0.5 ? 8 : mode.pct >= 0.25 ? 4 : 1;
+  const step = stride * 4;
+
+  for (let i = 0; i < data.length; i += step) {
+    const lum = (data[i] + data[i+1] + data[i+2]) / 3;
+    // Skip very dark (<20) and very bright (>235) pixels for cleaner reading
+    if (lum < 20 || lum > 235) continue;
     r += data[i];
     g += data[i+1];
     b += data[i+2];
     count++;
   }
+
+  if (count === 0) {
+    // Fallback: no mid-tone pixels, use all
+    for (let i = 0; i < data.length; i += step) {
+      r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+    }
+  }
+
   r = Math.round(r / count);
   g = Math.round(g / count);
   b = Math.round(b / count);
@@ -884,6 +1028,10 @@ function kelvinToNeedlePos(k) {
   const minK = 2000, maxK = 10000;
   return Math.max(0, Math.min(100, (k - minK) / (maxK - minK) * 100));
 }
+
+window.addEventListener('resize', updateSampleBox);
+// Init slider display
+onSliderChange(1);
 
 function updateUI(r, g, b) {
   // Sample dot color
