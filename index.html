@@ -1,1081 +1,829 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WB Meter — Malik Motion</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;700;800&display=swap');
-
-  :root {
-    --bg: #0a0a0c;
-    --panel: #111115;
-    --border: #1f1f28;
-    --accent: #c8a96e;
-    --accent2: #6ec8c8;
-    --text: #e8e4dc;
-    --muted: #5a5860;
-    --danger: #e06060;
-    --good: #60c878;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-
-  .logo {
-    font-family: 'Syne Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  .header-label {
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  /* Camera view */
-  .camera-wrap {
-    position: relative;
-    width: 100%;
-    background: #000;
-    aspect-ratio: 16/9;
-    overflow: hidden;
-  }
-
-  video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  /* Crosshair overlay */
-  .crosshair {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .crosshair-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    border: 1.5px solid rgba(255,255,255,0.85);
-    border-radius: 4px;
-    transition: width 0.15s, height 0.15s;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
-  }
-
-  /* Corner ticks on sample box */
-  .crosshair-ring::before,
-  .crosshair-ring::after {
-    content: '';
-    position: absolute;
-    background: rgba(255,255,255,0.85);
-  }
-  .crosshair-ring::before {
-    width: 1px;
-    height: 12px;
-    top: -16px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .crosshair-ring::after {
-    height: 1px;
-    width: 12px;
-    left: -16px;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  .crosshair-h {
-    position: absolute;
-    top: 50%;
-    left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
-    transform: translateY(-50%);
-  }
-  .crosshair-v {
-    position: absolute;
-    left: 50%;
-    top: 0; bottom: 0;
-    width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
-    transform: translateX(-50%);
-  }
-
-  /* Corner markers */
-  .corner {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-color: rgba(255,255,255,0.4);
-    border-style: solid;
-  }
-  .corner.tl { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
-  .corner.tr { top: 12px; right: 12px; border-width: 1px 1px 0 0; }
-  .corner.bl { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
-  .corner.br { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
-
-  /* Sample dot preview */
-  .sample-dot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #888;
-    border: 2px solid #fff;
-    box-shadow: 0 0 8px rgba(0,0,0,0.6);
-    transition: background 0.15s;
-  }
-
-  canvas { display: none; }
-
-  /* Data panels */
-  .data-section {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* Big CCT display */
-  .cct-display {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 18px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .cct-main {
-    flex: 1;
-  }
-
-  .cct-label {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .cct-value {
-    font-family: 'Syne Mono', monospace;
-    font-size: 42px;
-    line-height: 1;
-    color: var(--accent);
-    transition: color 0.3s;
-  }
-
-  .cct-unit {
-    font-size: 14px;
-    color: var(--muted);
-    margin-left: 4px;
-  }
-
-  .cct-name {
-    font-size: 12px;
-    color: var(--text);
-    margin-top: 6px;
-    letter-spacing: 0.05em;
-  }
-
-  .color-swatch {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: #888;
-    transition: background 0.15s;
-    flex-shrink: 0;
-  }
-
-  /* Tint */
-  .tint-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .tint-label {
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-    width: 36px;
-    flex-shrink: 0;
-  }
-
-  .tint-bar-wrap {
-    flex: 1;
-    height: 6px;
-    background: linear-gradient(90deg, #60c060, #888, #c060c0);
-    border-radius: 99px;
-    position: relative;
-  }
-
-  .tint-indicator {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #fff;
-    border: 2px solid var(--bg);
-    box-shadow: 0 0 4px rgba(0,0,0,0.6);
-    transition: left 0.15s;
-  }
-
-  .tint-value {
-    font-family: 'Syne Mono', monospace;
-    font-size: 13px;
-    color: var(--text);
-    width: 40px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  /* RGB channels */
-  .channels {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .ch-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .ch-name {
-    font-family: 'Syne Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-    width: 14px;
-  }
-
-  .ch-bar-bg {
-    flex: 1;
-    height: 4px;
-    background: var(--border);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-
-  .ch-bar-fill {
-    height: 100%;
-    border-radius: 99px;
-    transition: width 0.1s;
-  }
-
-  .ch-r .ch-bar-fill { background: #e06060; }
-  .ch-g .ch-bar-fill { background: #60c878; }
-  .ch-b .ch-bar-fill { background: #6090e0; }
-
-  .ch-val {
-    font-family: 'Syne Mono', monospace;
-    font-size: 12px;
-    color: var(--text);
-    width: 32px;
-    text-align: right;
-  }
-
-  /* WB presets reference */
-  .presets-section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-  }
-
-  .presets-label {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 10px;
-  }
-
-  .presets-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-  }
-
-  .preset {
-    border-radius: 6px;
-    padding: 8px 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid var(--border);
-    cursor: default;
-    transition: border-color 0.2s, background 0.2s;
-  }
-
-  .preset.active {
-    border-color: var(--accent);
-    background: rgba(200,169,110,0.08);
-  }
-
-  .preset-dot {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .preset-name {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-    text-align: center;
-  }
-
-  .preset-k {
-    font-family: 'Syne Mono', monospace;
-    font-size: 10px;
-    color: var(--text);
-    text-align: center;
-  }
-
-  /* Sample area slider */
-  .sample-slider-section {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-  }
-
-  .slider-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-
-  .slider-label {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .slider-value {
-    font-family: 'Syne Mono', monospace;
-    font-size: 13px;
-    color: var(--accent);
-  }
-
-  .slider-track {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .slider-tick-label {
-    font-size: 10px;
-    color: var(--muted);
-    font-family: 'Syne Mono', monospace;
-    flex-shrink: 0;
-  }
-
-  input[type=range] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 4px;
-    border-radius: 99px;
-    background: linear-gradient(90deg, var(--accent) var(--pct, 10%), var(--border) var(--pct, 10%));
-    outline: none;
-    cursor: pointer;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: 2px solid var(--bg);
-    box-shadow: 0 0 6px rgba(200,169,110,0.4);
-    cursor: pointer;
-    transition: transform 0.1s;
-  }
-
-  input[type=range]:active::-webkit-slider-thumb {
-    transform: scale(1.2);
-  }
-    padding: 0 16px 16px;
-    display: flex;
-    gap: 8px;
-  }
-
-  .btn {
-    flex: 1;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-
-  .btn:hover {
-    background: #1a1a22;
-    border-color: var(--muted);
-  }
-
-  .btn.primary {
-    background: var(--accent);
-    color: #0a0a0c;
-    border-color: var(--accent);
-    font-weight: 700;
-  }
-
-  .btn.primary:hover { background: #d9bb7f; }
-
-  /* Status bar */
-  .status-bar {
-    padding: 10px 20px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
-    background: var(--panel);
-  }
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--good);
-    display: inline-block;
-    margin-right: 6px;
-    animation: pulse 2s infinite;
-  }
-
-  .status-dot.off { background: var(--danger); animation: none; }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  /* Freeze indicator */
-  .freeze-overlay {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    background: rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    color: var(--accent);
-    text-transform: uppercase;
-    display: none;
-  }
-
-  .freeze-overlay.visible { display: block; }
-
-  /* No camera message */
-  .no-camera {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    background: #050507;
-  }
-
-  .no-camera-icon {
-    font-size: 32px;
-    opacity: 0.4;
-  }
-
-  /* Kelvin bar */
-  .kelvin-bar-section {
-    padding: 0 16px;
-  }
-
-  .kelvin-bar-wrap {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-  }
-
-  .kelvin-gradient-wrap {
-    position: relative;
-    height: 10px;
-    border-radius: 99px;
-    overflow: visible;
-    margin-top: 4px;
-  }
-
-  .kelvin-gradient {
-    width: 100%;
-    height: 10px;
-    border-radius: 99px;
-    background: linear-gradient(90deg,
-      #ff8c40 0%,        /* 2000K warm */
-      #ffb870 15%,       /* 3000K tungsten */
-      #ffd490 28%,       /* 4000K fluorescent */
-      #fff5e0 42%,       /* 5000K daylight */
-      #ffffff 50%,       /* 5500K direct sun */
-      #e8f0ff 62%,       /* 6500K cloudy */
-      #c8d8ff 78%,       /* 7500K shade */
-      #a0b8ff 90%,       /* 9000K blue sky */
-      #7090ff 100%       /* 10000K+ */
-    );
-  }
-
-  .kelvin-needle {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 3px;
-    height: 20px;
-    background: #fff;
-    border-radius: 99px;
-    box-shadow: 0 0 6px rgba(255,255,255,0.8);
-    transition: left 0.2s;
-  }
-
-  .kelvin-ticks {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 5px;
-  }
-
-  .kelvin-tick {
-    font-family: 'Syne Mono', monospace;
-    font-size: 9px;
-    color: var(--muted);
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Malik Motion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0b0b;
+      --bg2: #111111;
+      --surface: #161616;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e4dc;
+      --muted: #6b6760;
+      --accent: #c8a96e;
+      --accent2: #8b6f3e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      cursor: none;
+      overflow-x: hidden;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease, width 0.2s ease, height 0.2s ease, opacity 0.2s;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid rgba(200,169,110,0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.12s ease, width 0.25s ease, height 0.25s ease, opacity 0.25s;
+    }
+    body:has(a:hover) .cursor,
+    body:has(button:hover) .cursor { width: 14px; height: 14px; }
+    body:has(a:hover) .cursor-ring,
+    body:has(button:hover) .cursor-ring { width: 50px; height: 50px; opacity: 0.6; }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 9997;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 28px 48px;
+      mix-blend-mode: normal;
+    }
+    nav::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(11,11,11,0.9) 0%, transparent 100%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* HERO */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 48px 72px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(140, 100, 40, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 20% 80%, rgba(200,169,110,0.06) 0%, transparent 60%),
+        var(--bg);
+      z-index: 0;
+    }
+    .hero-reel {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .reel-placeholder {
+      width: 56%;
+      aspect-ratio: 16/9;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .reel-placeholder::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(200,169,110,0.04) 0%, transparent 60%);
+    }
+    .play-btn {
+      width: 64px; height: 64px;
+      border: 1px solid rgba(200,169,110,0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .play-btn:hover { background: rgba(200,169,110,0.1); border-color: var(--accent); }
+    .play-btn svg { margin-left: 4px; }
+    .reel-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+    .hero-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(64px, 9vw, 130px);
+      font-weight: 300;
+      line-height: 0.92;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--accent);
+    }
+    .hero-sub {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      max-width: 340px;
+      line-height: 2;
+    }
+    .hero-line {
+      position: absolute;
+      right: 48px;
+      bottom: 72px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hero-line::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* SECTION SHARED */
+    section { padding: 120px 48px; }
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 300;
+      line-height: 1.05;
+      margin-bottom: 48px;
+    }
+
+    /* PORTFOLIO */
+    #work { background: var(--bg); }
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+    .portfolio-item {
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .portfolio-item:nth-child(1) { grid-column: span 8; }
+    .portfolio-item:nth-child(2) { grid-column: span 4; }
+    .portfolio-item:nth-child(3) { grid-column: span 4; }
+    .portfolio-item:nth-child(4) { grid-column: span 4; }
+    .portfolio-item:nth-child(5) { grid-column: span 4; }
+    .portfolio-thumb {
+      aspect-ratio: 16/9;
+      background: var(--bg2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .portfolio-thumb .thumb-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+    }
+    .thumb-icon { font-size: 28px; opacity: 0.3; }
+    .portfolio-item:hover .thumb-inner { opacity: 0.5; }
+    .portfolio-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11,11,11,0.75);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    .portfolio-item:hover .portfolio-overlay { opacity: 1; }
+    .portfolio-meta { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    .portfolio-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; }
+    .portfolio-info {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .portfolio-info-title { font-size: 12px; letter-spacing: 0.08em; }
+    .portfolio-info-tag {
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* ABOUT */
+    #about {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .about-image-wrap {
+      position: relative;
+    }
+    .about-image {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .about-image-accent {
+      position: absolute;
+      bottom: -24px;
+      right: -24px;
+      width: 60%;
+      height: 60%;
+      border: 1px solid rgba(200,169,110,0.15);
+      z-index: -1;
+    }
+    .about-text .section-title { margin-bottom: 28px; }
+    .about-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      line-height: 1.75;
+      color: rgba(232,228,220,0.8);
+      margin-bottom: 40px;
+    }
+    .about-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .stat-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 48px;
+      font-weight: 300;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* SERVICES */
+    #services { background: var(--bg); }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 8px;
+    }
+    .service-item {
+      background: var(--surface);
+      padding: 48px 36px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .service-item:hover { background: #1c1c1c; }
+    .service-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .service-item:hover::before { opacity: 1; }
+    .service-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 64px;
+      font-weight: 300;
+      color: rgba(200,169,110,0.12);
+      line-height: 1;
+      margin-bottom: 28px;
+    }
+    .service-title {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .service-desc {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    .service-tags {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+    }
+
+    /* CONTACT */
+    #contact {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 140px 48px;
+    }
+    #contact .section-label { justify-content: center; display: block; }
+    #contact .section-title { text-align: center; }
+    .contact-tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(232,228,220,0.5);
+      margin-bottom: 64px;
+    }
+    .contact-email {
+      display: inline-block;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 300;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(200,169,110,0.3);
+      padding-bottom: 8px;
+      transition: border-color 0.3s, color 0.3s;
+      margin-bottom: 64px;
+      display: block;
+    }
+    .contact-email:hover { border-color: var(--accent); color: var(--text); }
+    .contact-links {
+      display: flex;
+      justify-content: center;
+      gap: 36px;
+    }
+    .contact-links a {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .contact-links a:hover { color: var(--accent); }
+
+    /* FOOTER */
+    footer {
+      padding: 32px 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+    }
+    .footer-copy {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .footer-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      font-weight: 300;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,0.4);
+    }
+
+    /* ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      nav { padding: 24px 24px; }
+      .nav-links { display: none; }
+      section { padding: 80px 24px; }
+      #hero { padding: 0 24px 60px; }
+      .hero-reel { position: relative; inset: auto; margin-bottom: 40px; margin-top: 100px; }
+      .reel-placeholder { width: 100%; }
+      #hero { justify-content: flex-start; }
+      .hero-line { display: none; }
+      .portfolio-item:nth-child(n) { grid-column: span 12; }
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+      .about-image { aspect-ratio: 4/3; }
+      .about-image-accent { display: none; }
+      .services-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
 </head>
 <body>
 
-<header>
-  <span class="logo">WB Meter</span>
-  <span class="header-label">Color Temperature</span>
-  <span class="logo" style="color:var(--muted); font-size:10px;">Malik Motion</span>
-</header>
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
 
-<div class="main">
-  <div class="camera-wrap">
-    <div class="no-camera" id="noCameraMsg">
-      <div class="no-camera-icon">⬛</div>
-      <div>Kamera ikke aktiveret</div>
-    </div>
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
-    <div class="crosshair">
-      <div class="crosshair-h"></div>
-      <div class="crosshair-v"></div>
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
-      <div class="crosshair-ring"></div>
-      <div class="sample-dot" id="sampleDot"></div>
-    </div>
-    <div class="freeze-overlay" id="freezeLabel">Frosset</div>
-  </div>
+  <!-- NAV -->
+  <nav>
+    <a href="#hero" class="nav-logo">Malik<span>.</span>Motion</a>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
 
-  <div class="data-section">
-    <!-- CCT Big number -->
-    <div class="cct-display">
-      <div class="cct-main">
-        <div class="cct-label">Farvetemperatur</div>
-        <div>
-          <span class="cct-value" id="cctValue">—</span>
-          <span class="cct-unit">K</span>
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-reel">
+      <div class="reel-placeholder">
+        <div class="play-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M5 3L15 9L5 15V3Z" fill="#c8a96e"/>
+          </svg>
         </div>
-        <div class="cct-name" id="cctName">Aktivér kamera</div>
-      </div>
-      <div class="color-swatch" id="colorSwatch"></div>
-    </div>
-
-    <!-- Tint -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 16px;">
-      <div class="cct-label" style="margin-bottom:8px;">Tint (grøn ↔ magenta)</div>
-      <div class="tint-row">
-        <div class="tint-label">G</div>
-        <div class="tint-bar-wrap">
-          <div class="tint-indicator" id="tintIndicator" style="left:50%"></div>
-        </div>
-        <div class="tint-label" style="text-align:right;">M</div>
-        <div class="tint-value" id="tintValue">—</div>
+        <div class="reel-label">Showreel 2024</div>
       </div>
     </div>
-  </div>
+    <div class="hero-content reveal">
+      <div class="hero-eyebrow">Videographer · Motion Designer · Editor</div>
+      <h1 class="hero-title">
+        Stories<br>
+        <em>in motion</em>
+      </h1>
+      <p class="hero-sub">Branded video content, motion graphics &amp; animation — based in Randers, Denmark.</p>
+    </div>
+    <div class="hero-line">Scroll to explore</div>
+  </section>
 
-  <!-- Kelvin bar -->
-  <div class="kelvin-bar-section">
-    <div class="kelvin-bar-wrap">
-      <div class="cct-label">Kelvin skala — 2000K til 10000K</div>
-      <div class="kelvin-gradient-wrap">
-        <div class="kelvin-gradient"></div>
-        <div class="kelvin-needle" id="kNeedle" style="left:50%"></div>
+  <!-- WORK -->
+  <section id="work">
+    <div class="section-label reveal">Selected Work</div>
+    <h2 class="section-title reveal">Recent Projects</h2>
+    <div class="portfolio-grid">
+
+      <div class="portfolio-item reveal">
+        <div class="portfolio-thumb">
+          <div class="thumb-inner">
+            <div class="thumb-icon">▶</div>
+            <span>Add your video here</span>
+          </div>
+          <div class="portfolio-overlay">
+            <div class="portfolio-meta">Commercial · 2024</div>
+            <div class="portfolio-name">Project Title</div>
+          </div>
+        </div>
+        <div class="portfolio-info">
+          <span class="portfolio-info-title">Project Title</span>
+          <span class="portfolio-info-tag">Commercial</span>
+        </div>
       </div>
-      <div class="kelvin-ticks">
-        <span class="kelvin-tick">2K</span>
-        <span class="kelvin-tick">3K</span>
-        <span class="kelvin-tick">4K</span>
-        <span class="kelvin-tick">5.5K</span>
-        <span class="kelvin-tick">6.5K</span>
-        <span class="kelvin-tick">8K</span>
-        <span class="kelvin-tick">10K</span>
+
+      <div class="portfolio-item reveal">
+        <div class="portfolio-thumb">
+          <div class="thumb-inner">
+            <div class="thumb-icon">▶</div>
+            <span>Add your video here</span>
+          </div>
+          <div class="portfolio-overlay">
+            <div class="portfolio-meta">Motion Graphics · 2024</div>
+            <div class="portfolio-name">Project Title</div>
+          </div>
+        </div>
+        <div class="portfolio-info">
+          <span class="portfolio-info-title">Project Title</span>
+          <span class="portfolio-info-tag">Motion</span>
+        </div>
+      </div>
+
+      <div class="portfolio-item reveal">
+        <div class="portfolio-thumb">
+          <div class="thumb-inner">
+            <div class="thumb-icon">▶</div>
+            <span>Add your video here</span>
+          </div>
+          <div class="portfolio-overlay">
+            <div class="portfolio-meta">Brand Film · 2024</div>
+            <div class="portfolio-name">Project Title</div>
+          </div>
+        </div>
+        <div class="portfolio-info">
+          <span class="portfolio-info-title">Project Title</span>
+          <span class="portfolio-info-tag">Brand Film</span>
+        </div>
+      </div>
+
+      <div class="portfolio-item reveal">
+        <div class="portfolio-thumb">
+          <div class="thumb-inner">
+            <div class="thumb-icon">▶</div>
+            <span>Add your video here</span>
+          </div>
+          <div class="portfolio-overlay">
+            <div class="portfolio-meta">Animation · 2023</div>
+            <div class="portfolio-name">Project Title</div>
+          </div>
+        </div>
+        <div class="portfolio-info">
+          <span class="portfolio-info-title">Project Title</span>
+          <span class="portfolio-info-tag">Animation</span>
+        </div>
+      </div>
+
+      <div class="portfolio-item reveal">
+        <div class="portfolio-thumb">
+          <div class="thumb-inner">
+            <div class="thumb-icon">▶</div>
+            <span>Add your video here</span>
+          </div>
+          <div class="portfolio-overlay">
+            <div class="portfolio-meta">Event · 2023</div>
+            <div class="portfolio-name">Project Title</div>
+          </div>
+        </div>
+        <div class="portfolio-info">
+          <span class="portfolio-info-title">Project Title</span>
+          <span class="portfolio-info-tag">Event</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-grid">
+      <div class="about-image-wrap reveal">
+        <div class="about-image">
+          <div class="thumb-icon" style="font-size:40px; opacity:0.2;">◻</div>
+          <span style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted)">Your photo here</span>
+        </div>
+        <div class="about-image-accent"></div>
+      </div>
+      <div class="about-text reveal">
+        <div class="section-label">About</div>
+        <h2 class="section-title">The eye<br>behind the lens</h2>
+        <p class="about-body">
+          Freelance videographer, motion designer, and editor based in Randers, Denmark. I combine cinematic storytelling with precise motion craft — turning brand ideas into visuals that land.
+        </p>
+        <p class="about-body">
+          From concept to final cut, I work closely with marketing and PR professionals to build content that moves people — and moves product.
+        </p>
+        <div class="about-stats">
+          <div>
+            <div class="stat-num">8+</div>
+            <div class="stat-label">Years experience</div>
+          </div>
+          <div>
+            <div class="stat-num">60+</div>
+            <div class="stat-label">Projects delivered</div>
+          </div>
+          <div>
+            <div class="stat-num">DK</div>
+            <div class="stat-label">Based in Randers</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- RGB channels -->
-  <div class="data-section" style="padding-top:0;">
-    <div class="channels">
-      <div class="cct-label" style="margin-bottom:2px;">RGB kanaler</div>
-      <div class="ch-row ch-r">
-        <div class="ch-name" style="color:#e06060">R</div>
-        <div class="ch-bar-bg"><div class="ch-bar-fill" id="rBar" style="width:50%"></div></div>
-        <div class="ch-val" id="rVal">—</div>
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="section-label reveal">What I do</div>
+    <h2 class="section-title reveal">Services</h2>
+    <div class="services-grid">
+
+      <div class="service-item reveal">
+        <div class="service-num">01</div>
+        <div class="service-title">Videography</div>
+        <p class="service-desc">Cinematic production from concept to delivery. Corporate, commercial, event, and documentary-style video.</p>
+        <div class="service-tags">
+          <span class="tag">Brand Films</span>
+          <span class="tag">Commercials</span>
+          <span class="tag">Event Recap</span>
+          <span class="tag">Interview</span>
+        </div>
       </div>
-      <div class="ch-row ch-g">
-        <div class="ch-name" style="color:#60c878">G</div>
-        <div class="ch-bar-bg"><div class="ch-bar-fill" id="gBar" style="width:50%"></div></div>
-        <div class="ch-val" id="gVal">—</div>
+
+      <div class="service-item reveal">
+        <div class="service-num">02</div>
+        <div class="service-title">Motion Graphics</div>
+        <p class="service-desc">Animated logos, title sequences, social content, and branded motion — built to communicate clearly and look great.</p>
+        <div class="service-tags">
+          <span class="tag">2D Animation</span>
+          <span class="tag">Logo Animation</span>
+          <span class="tag">Social Content</span>
+          <span class="tag">Infographics</span>
+        </div>
       </div>
-      <div class="ch-row ch-b">
-        <div class="ch-name" style="color:#6090e0">B</div>
-        <div class="ch-bar-bg"><div class="ch-bar-fill" id="bBar" style="width:50%"></div></div>
-        <div class="ch-val" id="bVal">—</div>
+
+      <div class="service-item reveal">
+        <div class="service-num">03</div>
+        <div class="service-title">Editing & Post</div>
+        <p class="service-desc">Tight, purposeful editing with colour grading, sound design, and motion graphics integration.</p>
+        <div class="service-tags">
+          <span class="tag">Colour Grading</span>
+          <span class="tag">Sound Design</span>
+          <span class="tag">VFX</span>
+          <span class="tag">Delivery</span>
+        </div>
       </div>
+
     </div>
+  </section>
 
-    <!-- Sample area slider -->
-    <div class="sample-slider-section">
-      <div class="slider-header">
-        <div class="slider-label">Samplingsområde</div>
-        <div class="slider-value" id="sliderDisplay">Punkt (20px)</div>
-      </div>
-      <div class="slider-track">
-        <span class="slider-tick-label">Punkt</span>
-        <input type="range" id="sampleSlider" min="1" max="5" value="1" step="1" oninput="onSliderChange(this.value)">
-        <span class="slider-tick-label">Fuld</span>
-      </div>
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="section-label">Get in touch</div>
+    <h2 class="section-title reveal">Let's make<br>something.</h2>
+    <p class="contact-tagline reveal">Got a project in mind?</p>
+    <a href="mailto:hello@malikmotion.dk" class="contact-email reveal">hello@malikmotion.dk</a>
+    <div class="contact-links reveal">
+      <a href="https://malikmotion.dk" target="_blank">malikmotion.dk</a>
+      <a href="https://www.instagram.com/" target="_blank">Instagram</a>
+      <a href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
+      <a href="https://vimeo.com/" target="_blank">Vimeo</a>
     </div>
+  </section>
 
-    <!-- WB presets -->
-    <div class="presets-section">
-      <div class="presets-label">WB Presets reference</div>
-      <div class="presets-grid" id="presetsGrid">
-        <div class="preset" data-min="1800" data-max="2200">
-          <div class="preset-dot" style="background:#ff7020"></div>
-          <div class="preset-name">Stearinlys</div>
-          <div class="preset-k">~2000K</div>
-        </div>
-        <div class="preset" data-min="2700" data-max="3200">
-          <div class="preset-dot" style="background:#ffaa50"></div>
-          <div class="preset-name">Tungsten</div>
-          <div class="preset-k">3200K</div>
-        </div>
-        <div class="preset" data-min="3200" data-max="4200">
-          <div class="preset-dot" style="background:#ffd080"></div>
-          <div class="preset-name">Fluorescent</div>
-          <div class="preset-k">~3800K</div>
-        </div>
-        <div class="preset" data-min="4500" data-max="5500">
-          <div class="preset-dot" style="background:#fff0c0"></div>
-          <div class="preset-name">Dagslys</div>
-          <div class="preset-k">5000K</div>
-        </div>
-        <div class="preset" data-min="5500" data-max="6000">
-          <div class="preset-dot" style="background:#ffffff"></div>
-          <div class="preset-name">Sol (direkte)</div>
-          <div class="preset-k">5500K</div>
-        </div>
-        <div class="preset" data-min="6000" data-max="7000">
-          <div class="preset-dot" style="background:#d0e4ff"></div>
-          <div class="preset-name">Overskyet</div>
-          <div class="preset-k">6500K</div>
-        </div>
-        <div class="preset" data-min="7000" data-max="8500">
-          <div class="preset-dot" style="background:#a8c4ff"></div>
-          <div class="preset-name">Skygge</div>
-          <div class="preset-k">7500K</div>
-        </div>
-        <div class="preset" data-min="8500" data-max="12000">
-          <div class="preset-dot" style="background:#7090ff"></div>
-          <div class="preset-name">Blå himmel</div>
-          <div class="preset-k">9000K+</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- FOOTER -->
+  <footer>
+    <span class="footer-copy">© 2025 Malik Motion. All rights reserved.</span>
+    <span class="footer-logo">Malik Motion</span>
+  </footer>
 
-  <div class="controls">
-    <button class="btn" id="startBtn" onclick="startCamera()">Aktivér kamera</button>
-    <button class="btn" id="freezeBtn" onclick="toggleFreeze()" disabled>Frys billede</button>
-    <button class="btn" id="switchBtn" onclick="switchCamera()" style="display:none">Skift kamera</button>
-  </div>
-</div>
-
-<div class="status-bar">
-  <div><span class="status-dot off" id="statusDot"></span><span id="statusText">Kamera inaktiv</span></div>
-  <div id="fpsText">—</div>
-</div>
-
-<script>
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-let streaming = false;
-let frozen = false;
-let animId = null;
-let currentFacingMode = 'environment';
-let currentStream = null;
-let fpsCounter = 0;
-let fpsTime = Date.now();
-let currentCCT = 0;
-let sampleMode = 1; // 1=point, 2=small, 3=medium, 4=large, 5=full
-
-const sampleModes = [
-  { label: 'Punkt (20px)',    pct: 0.015 },
-  { label: 'Lille (10%)',     pct: 0.10  },
-  { label: 'Medium (25%)',    pct: 0.25  },
-  { label: 'Stor (50%)',      pct: 0.50  },
-  { label: 'Fuld billede',    pct: 1.0   },
-];
-
-function onSliderChange(val) {
-  sampleMode = parseInt(val);
-  const mode = sampleModes[sampleMode - 1];
-  document.getElementById('sliderDisplay').textContent = mode.label;
-
-  // Update slider gradient fill
-  const slider = document.getElementById('sampleSlider');
-  const pct = ((sampleMode - 1) / 4) * 100;
-  slider.style.setProperty('--pct', pct + '%');
-
-  // Update visual sample box on video overlay
-  updateSampleBox();
-}
-
-function updateSampleBox() {
-  const ring = document.querySelector('.crosshair-ring');
-  const camWrap = document.querySelector('.camera-wrap');
-  const wrapW = camWrap.offsetWidth;
-  const wrapH = camWrap.offsetHeight;
-
-  const mode = sampleModes[sampleMode - 1];
-  if (mode.pct >= 1.0) {
-    ring.style.width = (wrapW - 16) + 'px';
-    ring.style.height = (wrapH - 16) + 'px';
-  } else {
-    const size = Math.round(Math.min(wrapW, wrapH) * mode.pct);
-    ring.style.width = Math.max(20, size) + 'px';
-    ring.style.height = Math.max(20, size) + 'px';
-  }
-}
-
-async function startCamera() {
-  try {
-    if (currentStream) {
-      currentStream.getTracks().forEach(t => t.stop());
+  <script>
+    // Cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function animateCursor() {
+      cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(animateCursor);
     }
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
+    animateCursor();
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+
+    // Initial hero reveal
+    window.addEventListener('load', () => {
+      document.querySelectorAll('#hero .reveal').forEach((el, i) => {
+        setTimeout(() => el.classList.add('visible'), 300 + i * 150);
+      });
     });
-    currentStream = stream;
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      streaming = true;
-      frozen = false;
-      document.getElementById('noCameraMsg').style.display = 'none';
-      document.getElementById('startBtn').textContent = 'Genstart';
-      document.getElementById('freezeBtn').disabled = false;
-      document.getElementById('switchBtn').style.display = 'flex';
-      document.getElementById('statusDot').classList.remove('off');
-      document.getElementById('statusText').textContent = 'Live';
-      updateSampleBox();
-      if (animId) cancelAnimationFrame(animId);
-      measure();
-    };
-  } catch(e) {
-    document.getElementById('statusText').textContent = 'Kameraadgang nægtet';
-    document.getElementById('noCameraMsg').style.display = 'flex';
-  }
-}
-
-async function switchCamera() {
-  currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-  await startCamera();
-}
-
-function toggleFreeze() {
-  frozen = !frozen;
-  document.getElementById('freezeBtn').textContent = frozen ? 'Fortsæt live' : 'Frys billede';
-  document.getElementById('freezeLabel').classList.toggle('visible', frozen);
-  document.getElementById('statusText').textContent = frozen ? 'Frosset' : 'Live';
-  if (!frozen) measure();
-}
-
-function measure() {
-  if (!streaming) return;
-  if (!frozen) {
-    try {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    } catch(e) {
-      animId = requestAnimationFrame(measure);
-      return;
-    }
-  }
-
-  // Determine sample region based on sampleMode
-  const mode = sampleModes[sampleMode - 1];
-  let sx, sy, sw, sh;
-
-  if (mode.pct >= 1.0) {
-    sx = 0; sy = 0; sw = canvas.width; sh = canvas.height;
-  } else {
-    sw = Math.max(4, Math.round(Math.min(canvas.width, canvas.height) * mode.pct));
-    sh = sw;
-    sx = Math.floor((canvas.width - sw) / 2);
-    sy = Math.floor((canvas.height - sh) / 2);
-  }
-
-  const imgData = ctx.getImageData(sx, sy, sw, sh);
-  const data = imgData.data;
-
-  let r = 0, g = 0, b = 0, count = 0;
-
-  // For large areas: skip pixels for performance (stride sampling)
-  const stride = mode.pct >= 0.5 ? 8 : mode.pct >= 0.25 ? 4 : 1;
-  const step = stride * 4;
-
-  for (let i = 0; i < data.length; i += step) {
-    const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-    // Skip very dark (<20) and very bright (>235) pixels for cleaner reading
-    if (lum < 20 || lum > 235) continue;
-    r += data[i];
-    g += data[i+1];
-    b += data[i+2];
-    count++;
-  }
-
-  if (count === 0) {
-    // Fallback: no mid-tone pixels, use all
-    for (let i = 0; i < data.length; i += step) {
-      r += data[i]; g += data[i+1]; b += data[i+2]; count++;
-    }
-  }
-
-  r = Math.round(r / count);
-  g = Math.round(g / count);
-  b = Math.round(b / count);
-
-  updateUI(r, g, b);
-
-  // FPS
-  fpsCounter++;
-  const now = Date.now();
-  if (now - fpsTime >= 1000) {
-    document.getElementById('fpsText').textContent = fpsCounter + ' fps';
-    fpsCounter = 0;
-    fpsTime = now;
-  }
-
-  if (!frozen) {
-    animId = requestAnimationFrame(measure);
-  }
-}
-
-function rgbToKelvin(r, g, b) {
-  // Normalize
-  const sum = r + g + b;
-  if (sum === 0) return 5500;
-  const nr = r / sum;
-  const nb = b / sum;
-
-  // Empirical mapping via R/B ratio → CCT
-  // Using Robertson's method approximation
-  const rb = (r + 0.001) / (b + 0.001);
-  const gb = (g + 0.001) / (b + 0.001);
-
-  // Rough CCT from R/B ratio
-  // High R/B = warm (low K), low R/B = cool (high K)
-  let cct;
-  if (rb > 3.0) cct = 2000;
-  else if (rb > 2.0) cct = 2000 + (3.0 - rb) / 1.0 * 1200;
-  else if (rb > 1.5) cct = 3200 + (2.0 - rb) / 0.5 * 800;
-  else if (rb > 1.1) cct = 4000 + (1.5 - rb) / 0.4 * 1500;
-  else if (rb > 0.8) cct = 5500 + (1.1 - rb) / 0.3 * 1500;
-  else if (rb > 0.5) cct = 7000 + (0.8 - rb) / 0.3 * 2000;
-  else cct = 9000 + (0.5 - rb) / 0.5 * 1500;
-
-  cct = Math.max(2000, Math.min(10500, Math.round(cct / 50) * 50));
-  return cct;
-}
-
-function tintFromRGB(r, g, b) {
-  // Tint: green channel vs average of R and B
-  const rb_avg = (r + b) / 2;
-  const tint = g - rb_avg; // positive = green, negative = magenta
-  return Math.round(tint);
-}
-
-function kelvinToColor(k) {
-  // Convert Kelvin to approximate RGB for swatch
-  let r, g, bl;
-  if (k <= 6600) {
-    r = 255;
-    g = Math.round(99.4708025861 * Math.log(k/100) - 161.1195681661);
-    bl = k <= 1900 ? 0 : Math.round(138.5177312231 * Math.log(k/100 - 10) - 305.0447927307);
-  } else {
-    r = Math.round(329.698727446 * Math.pow(k/100 - 60, -0.1332047592));
-    g = Math.round(288.1221695283 * Math.pow(k/100 - 60, -0.0755148492));
-    bl = 255;
-  }
-  return {
-    r: Math.max(0, Math.min(255, r)),
-    g: Math.max(0, Math.min(255, g)),
-    b: Math.max(0, Math.min(255, bl))
-  };
-}
-
-function getCCTName(k) {
-  if (k < 2200) return 'Stearinlys / kaminlys';
-  if (k < 2800) return 'Solnedgang / solopgang';
-  if (k < 3400) return 'Tungsten / glødepære';
-  if (k < 4200) return 'Warm fluorescent';
-  if (k < 5000) return 'Morgen-/aftensol';
-  if (k < 5700) return 'Direkte sollys / D55';
-  if (k < 6500) return 'Dagslys / D65';
-  if (k < 7500) return 'Overskyet himmel';
-  if (k < 9000) return 'Skygge / blå time';
-  return 'Blå himmel / klar dag';
-}
-
-function kelvinToNeedlePos(k) {
-  const minK = 2000, maxK = 10000;
-  return Math.max(0, Math.min(100, (k - minK) / (maxK - minK) * 100));
-}
-
-window.addEventListener('resize', updateSampleBox);
-// Init slider display
-onSliderChange(1);
-
-function updateUI(r, g, b) {
-  // Sample dot color
-  document.getElementById('sampleDot').style.background = `rgb(${r},${g},${b})`;
-  document.getElementById('colorSwatch').style.background = `rgb(${r},${g},${b})`;
-
-  // CCT
-  const cct = rgbToKelvin(r, g, b);
-  currentCCT = cct;
-  document.getElementById('cctValue').textContent = cct.toLocaleString('da-DK');
-  document.getElementById('cctName').textContent = getCCTName(cct);
-
-  // Color tint the CCT number
-  const swatchColor = kelvinToColor(cct);
-  document.getElementById('cctValue').style.color =
-    `rgb(${Math.min(255,swatchColor.r+40)},${Math.min(255,swatchColor.g+20)},${Math.min(255,swatchColor.b+20)})`;
-
-  // Tint
-  const tint = tintFromRGB(r, g, b);
-  const tintPct = Math.max(0, Math.min(100, (tint + 60) / 120 * 100));
-  document.getElementById('tintIndicator').style.left = tintPct + '%';
-  const tintLabel = tint > 5 ? `+${tint} G` : tint < -5 ? `${tint} M` : '0';
-  document.getElementById('tintValue').textContent = tintLabel;
-
-  // RGB bars
-  document.getElementById('rBar').style.width = (r / 255 * 100) + '%';
-  document.getElementById('gBar').style.width = (g / 255 * 100) + '%';
-  document.getElementById('bBar').style.width = (b / 255 * 100) + '%';
-  document.getElementById('rVal').textContent = r;
-  document.getElementById('gVal').textContent = g;
-  document.getElementById('bVal').textContent = b;
-
-  // Kelvin needle
-  const needlePos = kelvinToNeedlePos(cct);
-  document.getElementById('kNeedle').style.left = needlePos + '%';
-
-  // Highlight active preset
-  const presets = document.querySelectorAll('.preset');
-  presets.forEach(p => {
-    const min = parseInt(p.dataset.min);
-    const max = parseInt(p.dataset.max);
-    p.classList.toggle('active', cct >= min && cct <= max);
-  });
-}
-</script>
+  </script>
 </body>
 </html>
