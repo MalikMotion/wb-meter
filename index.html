@@ -3,22 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Malik Motion</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <title>My Creative Board</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0b0b0b;
-      --bg2: #111111;
-      --surface: #161616;
-      --border: rgba(255,255,255,0.07);
-      --text: #e8e4dc;
-      --muted: #6b6760;
-      --accent: #c8a96e;
-      --accent2: #8b6f3e;
+      --bg:        #0a0a08;
+      --surface:   #111110;
+      --border:    #2a2a26;
+      --gold:      #c9a94b;
+      --gold-dim:  #7a6429;
+      --cream:     #f0ead6;
+      --muted:     #6b6a60;
+      --text:      #e8e2d0;
+      --glow:      rgba(201,169,75,.18);
     }
 
     html { scroll-behavior: smooth; }
@@ -26,804 +25,430 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Syne', sans-serif;
-      font-size: 15px;
-      line-height: 1.6;
-      cursor: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      letter-spacing: .03em;
+      min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* Custom cursor */
-    .cursor {
-      position: fixed;
-      width: 8px; height: 8px;
-      background: var(--accent);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform 0.1s ease, width 0.2s ease, height 0.2s ease, opacity 0.2s;
-    }
-    .cursor-ring {
-      position: fixed;
-      width: 36px; height: 36px;
-      border: 1px solid rgba(200,169,110,0.4);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 9998;
-      transform: translate(-50%, -50%);
-      transition: transform 0.12s ease, width 0.25s ease, height 0.25s ease, opacity 0.25s;
-    }
-    body:has(a:hover) .cursor,
-    body:has(button:hover) .cursor { width: 14px; height: 14px; }
-    body:has(a:hover) .cursor-ring,
-    body:has(button:hover) .cursor-ring { width: 50px; height: 50px; opacity: 0.6; }
-
-    /* Grain overlay */
+    /* ── Grain overlay ── */
     body::before {
       content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.03;
+      position: fixed; inset: 0;
       pointer-events: none;
-      z-index: 9997;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: .55;
     }
 
-    /* NAV */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 28px 48px;
-      mix-blend-mode: normal;
+    /* ── Top bar ── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 3rem;
+      height: 58px;
+      background: rgba(10,10,8,.85);
+      backdrop-filter: blur(18px) saturate(1.4);
+      border-bottom: 1px solid var(--border);
+      animation: slideDown .6s ease both;
     }
-    nav::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(11,11,11,0.9) 0%, transparent 100%);
-      z-index: -1;
-      pointer-events: none;
-    }
-    .nav-logo {
+
+    .topbar-logo {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 22px;
-      font-weight: 300;
-      letter-spacing: 0.2em;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .12em;
       text-transform: uppercase;
-      color: var(--text);
-      text-decoration: none;
     }
-    .nav-logo span { color: var(--accent); }
-    .nav-links {
-      display: flex;
-      gap: 36px;
-      list-style: none;
-    }
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      transition: color 0.3s;
-    }
-    .nav-links a:hover { color: var(--accent); }
 
-    /* HERO */
-    #hero {
-      position: relative;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 0 48px 72px;
-      overflow: hidden;
+    .topbar-logo span {
+      color: var(--cream);
+      font-weight: 300;
+      font-style: italic;
     }
-    .hero-bg {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 70% 40%, rgba(140, 100, 40, 0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 20% 80%, rgba(200,169,110,0.06) 0%, transparent 60%),
-        var(--bg);
-      z-index: 0;
+
+    .topbar-nav {
+      display: flex; gap: 2.4rem; list-style: none;
     }
-    .hero-reel {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .reel-placeholder {
-      width: 56%;
-      aspect-ratio: 16/9;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      position: relative;
-      overflow: hidden;
-    }
-    .reel-placeholder::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(200,169,110,0.04) 0%, transparent 60%);
-    }
-    .play-btn {
-      width: 64px; height: 64px;
-      border: 1px solid rgba(200,169,110,0.5);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.3s, border-color 0.3s;
-    }
-    .play-btn:hover { background: rgba(200,169,110,0.1); border-color: var(--accent); }
-    .play-btn svg { margin-left: 4px; }
-    .reel-label {
-      font-size: 10px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
+
+    .topbar-nav a {
       color: var(--muted);
-    }
-    .hero-content {
-      position: relative;
-      z-index: 2;
-    }
-    .hero-eyebrow {
-      font-size: 10px;
-      letter-spacing: 0.3em;
+      text-decoration: none;
+      font-size: .7rem;
+      letter-spacing: .15em;
       text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 20px;
+      transition: color .25s;
     }
+
+    .topbar-nav a:hover { color: var(--gold); }
+
+    .topbar-badge {
+      font-size: .65rem;
+      letter-spacing: .12em;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: .25rem .75rem;
+      border-radius: 2px;
+    }
+
+    .topbar-badge span { color: var(--gold); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 130px 3rem 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+      animation: fadeUp .8s .2s ease both;
+    }
+
+    .hero-eyebrow {
+      font-size: .65rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.4rem;
+      display: flex; align-items: center; gap: .8rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block; width: 40px; height: 1px;
+      background: var(--gold);
+    }
+
     .hero-title {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(64px, 9vw, 130px);
-      font-weight: 300;
-      line-height: 0.92;
-      letter-spacing: -0.01em;
-      color: var(--text);
-      margin-bottom: 32px;
-    }
-    .hero-title em {
-      font-style: italic;
-      color: var(--accent);
-    }
-    .hero-sub {
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      max-width: 340px;
-      line-height: 2;
-    }
-    .hero-line {
-      position: absolute;
-      right: 48px;
-      bottom: 72px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .hero-line::before {
-      content: '';
-      display: block;
-      width: 40px;
-      height: 1px;
-      background: var(--accent);
-    }
-
-    /* SECTION SHARED */
-    section { padding: 120px 48px; }
-    .section-label {
-      font-size: 10px;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 16px;
-    }
-    .section-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(36px, 5vw, 64px);
+      font-size: clamp(3rem, 6vw, 6rem);
       font-weight: 300;
       line-height: 1.05;
-      margin-bottom: 48px;
+      color: var(--cream);
+      margin-bottom: 1.6rem;
     }
 
-    /* PORTFOLIO */
-    #work { background: var(--bg); }
-    .portfolio-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 16px;
-    }
-    .portfolio-item {
-      position: relative;
-      overflow: hidden;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .portfolio-item:nth-child(1) { grid-column: span 8; }
-    .portfolio-item:nth-child(2) { grid-column: span 4; }
-    .portfolio-item:nth-child(3) { grid-column: span 4; }
-    .portfolio-item:nth-child(4) { grid-column: span 4; }
-    .portfolio-item:nth-child(5) { grid-column: span 4; }
-    .portfolio-thumb {
-      aspect-ratio: 16/9;
-      background: var(--bg2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-    .portfolio-thumb .thumb-inner {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      transition: opacity 0.3s;
-    }
-    .thumb-icon { font-size: 28px; opacity: 0.3; }
-    .portfolio-item:hover .thumb-inner { opacity: 0.5; }
-    .portfolio-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(11,11,11,0.75);
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 24px;
-      opacity: 0;
-      transition: opacity 0.35s ease;
-    }
-    .portfolio-item:hover .portfolio-overlay { opacity: 1; }
-    .portfolio-meta { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
-    .portfolio-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; }
-    .portfolio-info {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .portfolio-info-title { font-size: 12px; letter-spacing: 0.08em; }
-    .portfolio-info-tag {
-      font-size: 9px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: rgba(255,255,255,0.04);
-      padding: 4px 10px;
-      border: 1px solid var(--border);
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
     }
 
-    /* ABOUT */
-    #about {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
+    .hero-sub {
+      color: var(--muted);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      max-width: 420px;
+      line-height: 1.9;
+    }
+
+    /* ── Board section ── */
+    .board-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 3rem 5rem;
+      animation: fadeUp .9s .4s ease both;
+    }
+
+    .board-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 1.6rem;
+      padding-bottom: 1.2rem;
       border-bottom: 1px solid var(--border);
     }
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
-    }
-    .about-image-wrap {
-      position: relative;
-    }
-    .about-image {
-      width: 100%;
-      aspect-ratio: 3/4;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-    .about-image-accent {
-      position: absolute;
-      bottom: -24px;
-      right: -24px;
-      width: 60%;
-      height: 60%;
-      border: 1px solid rgba(200,169,110,0.15);
-      z-index: -1;
-    }
-    .about-text .section-title { margin-bottom: 28px; }
-    .about-body {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 20px;
-      font-weight: 300;
-      line-height: 1.75;
-      color: rgba(232,228,220,0.8);
-      margin-bottom: 40px;
-    }
-    .about-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-      margin-top: 48px;
-      padding-top: 40px;
-      border-top: 1px solid var(--border);
-    }
-    .stat-num {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 48px;
-      font-weight: 300;
-      color: var(--accent);
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .stat-label {
-      font-size: 10px;
-      letter-spacing: 0.18em;
+
+    .board-label {
+      font-size: .6rem;
+      letter-spacing: .22em;
       text-transform: uppercase;
       color: var(--muted);
     }
 
-    /* SERVICES */
-    #services { background: var(--bg); }
-    .services-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2px;
-      margin-top: 8px;
+    .board-label strong {
+      display: block;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: .06em;
+      margin-top: .3rem;
     }
-    .service-item {
-      background: var(--surface);
-      padding: 48px 36px;
-      border: 1px solid var(--border);
+
+    .board-meta {
+      display: flex; gap: 2rem; align-items: center;
+    }
+
+    .board-pill {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .6rem; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+      animation: pulse 2.2s ease infinite;
+    }
+
+    /* ── Iframe wrapper ── */
+    .iframe-wrap {
       position: relative;
+      border: 1px solid var(--border);
+      border-radius: 6px;
       overflow: hidden;
-      transition: background 0.3s;
+      background: var(--surface);
+      box-shadow:
+        0 0 0 1px rgba(201,169,75,.06),
+        0 30px 80px rgba(0,0,0,.6),
+        0 0 120px var(--glow);
+      transition: box-shadow .4s;
     }
-    .service-item:hover { background: #1c1c1c; }
-    .service-item::before {
+
+    .iframe-wrap:hover {
+      box-shadow:
+        0 0 0 1px rgba(201,169,75,.14),
+        0 40px 100px rgba(0,0,0,.7),
+        0 0 160px rgba(201,169,75,.25);
+    }
+
+    /* decorative corner accents */
+    .iframe-wrap::before,
+    .iframe-wrap::after {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--accent), transparent);
-      opacity: 0;
-      transition: opacity 0.3s;
+      width: 28px; height: 28px;
+      border-color: var(--gold-dim);
+      border-style: solid;
+      z-index: 5;
+      pointer-events: none;
+      transition: border-color .3s;
     }
-    .service-item:hover::before { opacity: 1; }
-    .service-num {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 64px;
-      font-weight: 300;
-      color: rgba(200,169,110,0.12);
-      line-height: 1;
-      margin-bottom: 28px;
-    }
-    .service-title {
-      font-size: 13px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text);
-      margin-bottom: 16px;
-    }
-    .service-desc {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 17px;
-      font-weight: 300;
-      color: var(--muted);
-      line-height: 1.8;
-    }
-    .service-tags {
-      margin-top: 28px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .tag {
-      font-size: 9px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
+    .iframe-wrap::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .iframe-wrap::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+    .iframe-wrap:hover::before,
+    .iframe-wrap:hover::after { border-color: var(--gold); }
+
+    .iframe-chrome {
+      background: #0e0e0c;
+      border-bottom: 1px solid var(--border);
+      padding: .65rem 1rem;
+      display: flex; align-items: center; gap: .6rem;
     }
 
-    /* CONTACT */
-    #contact {
-      background: var(--bg2);
-      border-top: 1px solid var(--border);
-      text-align: center;
-      padding: 140px 48px;
+    .chrome-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--border);
     }
-    #contact .section-label { justify-content: center; display: block; }
-    #contact .section-title { text-align: center; }
-    .contact-tagline {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(28px, 4vw, 52px);
-      font-weight: 300;
-      font-style: italic;
-      color: rgba(232,228,220,0.5);
-      margin-bottom: 64px;
+
+    .chrome-url {
+      flex: 1; text-align: center;
+      font-size: .6rem; color: var(--muted);
+      letter-spacing: .08em;
     }
-    .contact-email {
-      display: inline-block;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(28px, 4vw, 52px);
-      font-weight: 300;
-      color: var(--accent);
-      text-decoration: none;
-      border-bottom: 1px solid rgba(200,169,110,0.3);
-      padding-bottom: 8px;
-      transition: border-color 0.3s, color 0.3s;
-      margin-bottom: 64px;
+
+    .iframe-wrap iframe {
+      width: 100%;
+      height: 640px;
+      border: none;
       display: block;
     }
-    .contact-email:hover { border-color: var(--accent); color: var(--text); }
-    .contact-links {
-      display: flex;
-      justify-content: center;
-      gap: 36px;
-    }
-    .contact-links a {
-      font-size: 10px;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.3s;
-    }
-    .contact-links a:hover { color: var(--accent); }
 
-    /* FOOTER */
-    footer {
-      padding: 32px 48px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-top: 1px solid var(--border);
-    }
-    .footer-copy {
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .footer-logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 14px;
-      font-weight: 300;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: rgba(200,169,110,0.4);
+    /* ── Stats row ── */
+    .stats {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 3rem 6rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      animation: fadeUp 1s .6s ease both;
     }
 
-    /* ANIMATIONS */
-    .reveal {
+    .stat-cell {
+      background: var(--bg);
+      padding: 2rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-cell::after {
+      content: '';
+      position: absolute; bottom: 0; left: 2rem; right: 2rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
       opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: none;
+      transition: opacity .3s;
     }
 
-    /* MOBILE */
-    @media (max-width: 900px) {
-      nav { padding: 24px 24px; }
-      .nav-links { display: none; }
-      section { padding: 80px 24px; }
-      #hero { padding: 0 24px 60px; }
-      .hero-reel { position: relative; inset: auto; margin-bottom: 40px; margin-top: 100px; }
-      .reel-placeholder { width: 100%; }
-      #hero { justify-content: flex-start; }
-      .hero-line { display: none; }
-      .portfolio-item:nth-child(n) { grid-column: span 12; }
-      .about-grid { grid-template-columns: 1fr; gap: 40px; }
-      .about-image { aspect-ratio: 4/3; }
-      .about-image-accent { display: none; }
-      .services-grid { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 12px; text-align: center; }
+    .stat-cell:hover::after { opacity: 1; }
+
+    .stat-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.8rem;
+      font-weight: 300;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: .4rem;
+    }
+
+    .stat-label {
+      font-size: .62rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 3rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      animation: fadeUp 1s .8s ease both;
+    }
+
+    footer p {
+      font-size: .6rem; color: var(--muted);
+      letter-spacing: .12em; text-transform: uppercase;
+    }
+
+    footer p span { color: var(--gold); }
+
+    .footer-line {
+      width: 80px; height: 1px;
+      background: linear-gradient(90deg, var(--gold-dim), transparent);
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+    /* ── Keyframes ── */
+    @keyframes slideDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { transform: translateY(28px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(.75); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .topbar { padding: 0 1.5rem; }
+      .topbar-nav { display: none; }
+      .hero, .board-section { padding-left: 1.5rem; padding-right: 1.5rem; }
+      .board-meta { display: none; }
+      .iframe-wrap iframe { height: 420px; }
+      .stats { margin-left: 1.5rem; margin-right: 1.5rem; }
+      footer { padding: 1.5rem; flex-direction: column; gap: 1rem; text-align: center; }
     }
   </style>
 </head>
 <body>
 
-  <div class="cursor" id="cursor"></div>
-  <div class="cursor-ring" id="cursorRing"></div>
-
-  <!-- NAV -->
-  <nav>
-    <a href="#hero" class="nav-logo">Malik<span>.</span>Motion</a>
-    <ul class="nav-links">
-      <li><a href="#work">Work</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#services">Services</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
-  </nav>
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-logo">Studio<span>Board</span></div>
+    <nav>
+      <ul class="topbar-nav">
+        <li><a href="#">Overview</a></li>
+        <li><a href="#">Projects</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </nav>
+    <div class="topbar-badge">2026 &mdash; <span>Active</span></div>
+  </header>
 
   <!-- HERO -->
-  <section id="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-reel">
-      <div class="reel-placeholder">
-        <div class="play-btn">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M5 3L15 9L5 15V3Z" fill="#c8a96e"/>
-          </svg>
-        </div>
-        <div class="reel-label">Showreel 2024</div>
-      </div>
-    </div>
-    <div class="hero-content reveal">
-      <div class="hero-eyebrow">Videographer · Motion Designer · Editor</div>
-      <h1 class="hero-title">
-        Stories<br>
-        <em>in motion</em>
-      </h1>
-      <p class="hero-sub">Branded video content, motion graphics &amp; animation — based in Randers, Denmark.</p>
-    </div>
-    <div class="hero-line">Scroll to explore</div>
+  <section class="hero">
+    <p class="hero-eyebrow">Creative Workspace</p>
+    <h1 class="hero-title">
+      Ideas,<br/>
+      <em>Organized</em><br/>
+      Beautifully.
+    </h1>
+    <p class="hero-sub">
+      An interactive visual board — explore the creative flow,
+      references, and notes that shape the work.
+    </p>
   </section>
 
-  <!-- WORK -->
-  <section id="work">
-    <div class="section-label reveal">Selected Work</div>
-    <h2 class="section-title reveal">Recent Projects</h2>
-    <div class="portfolio-grid">
-
-      <div class="portfolio-item reveal">
-        <div class="portfolio-thumb">
-          <div class="thumb-inner">
-            <div class="thumb-icon">▶</div>
-            <span>Add your video here</span>
-          </div>
-          <div class="portfolio-overlay">
-            <div class="portfolio-meta">Commercial · 2024</div>
-            <div class="portfolio-name">Project Title</div>
-          </div>
+  <!-- BOARD -->
+  <section class="board-section">
+    <div class="board-header">
+      <div class="board-label">
+        Current Board
+        <strong>Milanote Workspace</strong>
+      </div>
+      <div class="board-meta">
+        <div class="board-pill">
+          <span class="dot"></span>
+          Live &amp; Interactive
         </div>
-        <div class="portfolio-info">
-          <span class="portfolio-info-title">Project Title</span>
-          <span class="portfolio-info-tag">Commercial</span>
+        <div class="board-pill">
+          app.milanote.com
         </div>
       </div>
+    </div>
 
-      <div class="portfolio-item reveal">
-        <div class="portfolio-thumb">
-          <div class="thumb-inner">
-            <div class="thumb-icon">▶</div>
-            <span>Add your video here</span>
-          </div>
-          <div class="portfolio-overlay">
-            <div class="portfolio-meta">Motion Graphics · 2024</div>
-            <div class="portfolio-name">Project Title</div>
-          </div>
-        </div>
-        <div class="portfolio-info">
-          <span class="portfolio-info-title">Project Title</span>
-          <span class="portfolio-info-tag">Motion</span>
-        </div>
+    <div class="iframe-wrap">
+      <div class="iframe-chrome">
+        <div class="chrome-dot"></div>
+        <div class="chrome-dot"></div>
+        <div class="chrome-dot"></div>
+        <div class="chrome-url">app.milanote.com — Embedded Board</div>
       </div>
-
-      <div class="portfolio-item reveal">
-        <div class="portfolio-thumb">
-          <div class="thumb-inner">
-            <div class="thumb-icon">▶</div>
-            <span>Add your video here</span>
-          </div>
-          <div class="portfolio-overlay">
-            <div class="portfolio-meta">Brand Film · 2024</div>
-            <div class="portfolio-name">Project Title</div>
-          </div>
-        </div>
-        <div class="portfolio-info">
-          <span class="portfolio-info-title">Project Title</span>
-          <span class="portfolio-info-tag">Brand Film</span>
-        </div>
-      </div>
-
-      <div class="portfolio-item reveal">
-        <div class="portfolio-thumb">
-          <div class="thumb-inner">
-            <div class="thumb-icon">▶</div>
-            <span>Add your video here</span>
-          </div>
-          <div class="portfolio-overlay">
-            <div class="portfolio-meta">Animation · 2023</div>
-            <div class="portfolio-name">Project Title</div>
-          </div>
-        </div>
-        <div class="portfolio-info">
-          <span class="portfolio-info-title">Project Title</span>
-          <span class="portfolio-info-tag">Animation</span>
-        </div>
-      </div>
-
-      <div class="portfolio-item reveal">
-        <div class="portfolio-thumb">
-          <div class="thumb-inner">
-            <div class="thumb-icon">▶</div>
-            <span>Add your video here</span>
-          </div>
-          <div class="portfolio-overlay">
-            <div class="portfolio-meta">Event · 2023</div>
-            <div class="portfolio-name">Project Title</div>
-          </div>
-        </div>
-        <div class="portfolio-info">
-          <span class="portfolio-info-title">Project Title</span>
-          <span class="portfolio-info-tag">Event</span>
-        </div>
-      </div>
-
+      <iframe
+        src="https://app.milanote.com/1VXlZC1qKN6S1U?p=CvaRGrBFZYH"
+        width="800"
+        height="500"
+        frameborder="0"
+        loading="lazy"
+        allowfullscreen
+        title="Milanote Creative Board"
+      ></iframe>
     </div>
   </section>
 
-  <!-- ABOUT -->
-  <section id="about">
-    <div class="about-grid">
-      <div class="about-image-wrap reveal">
-        <div class="about-image">
-          <div class="thumb-icon" style="font-size:40px; opacity:0.2;">◻</div>
-          <span style="font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted)">Your photo here</span>
-        </div>
-        <div class="about-image-accent"></div>
-      </div>
-      <div class="about-text reveal">
-        <div class="section-label">About</div>
-        <h2 class="section-title">The eye<br>behind the lens</h2>
-        <p class="about-body">
-          Freelance videographer, motion designer, and editor based in Randers, Denmark. I combine cinematic storytelling with precise motion craft — turning brand ideas into visuals that land.
-        </p>
-        <p class="about-body">
-          From concept to final cut, I work closely with marketing and PR professionals to build content that moves people — and moves product.
-        </p>
-        <div class="about-stats">
-          <div>
-            <div class="stat-num">8+</div>
-            <div class="stat-label">Years experience</div>
-          </div>
-          <div>
-            <div class="stat-num">60+</div>
-            <div class="stat-label">Projects delivered</div>
-          </div>
-          <div>
-            <div class="stat-num">DK</div>
-            <div class="stat-label">Based in Randers</div>
-          </div>
-        </div>
-      </div>
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-cell">
+      <div class="stat-number">01</div>
+      <div class="stat-label">Active Board</div>
     </div>
-  </section>
-
-  <!-- SERVICES -->
-  <section id="services">
-    <div class="section-label reveal">What I do</div>
-    <h2 class="section-title reveal">Services</h2>
-    <div class="services-grid">
-
-      <div class="service-item reveal">
-        <div class="service-num">01</div>
-        <div class="service-title">Videography</div>
-        <p class="service-desc">Cinematic production from concept to delivery. Corporate, commercial, event, and documentary-style video.</p>
-        <div class="service-tags">
-          <span class="tag">Brand Films</span>
-          <span class="tag">Commercials</span>
-          <span class="tag">Event Recap</span>
-          <span class="tag">Interview</span>
-        </div>
-      </div>
-
-      <div class="service-item reveal">
-        <div class="service-num">02</div>
-        <div class="service-title">Motion Graphics</div>
-        <p class="service-desc">Animated logos, title sequences, social content, and branded motion — built to communicate clearly and look great.</p>
-        <div class="service-tags">
-          <span class="tag">2D Animation</span>
-          <span class="tag">Logo Animation</span>
-          <span class="tag">Social Content</span>
-          <span class="tag">Infographics</span>
-        </div>
-      </div>
-
-      <div class="service-item reveal">
-        <div class="service-num">03</div>
-        <div class="service-title">Editing & Post</div>
-        <p class="service-desc">Tight, purposeful editing with colour grading, sound design, and motion graphics integration.</p>
-        <div class="service-tags">
-          <span class="tag">Colour Grading</span>
-          <span class="tag">Sound Design</span>
-          <span class="tag">VFX</span>
-          <span class="tag">Delivery</span>
-        </div>
-      </div>
-
+    <div class="stat-cell">
+      <div class="stat-number">∞</div>
+      <div class="stat-label">Ideas Captured</div>
     </div>
-  </section>
-
-  <!-- CONTACT -->
-  <section id="contact">
-    <div class="section-label">Get in touch</div>
-    <h2 class="section-title reveal">Let's make<br>something.</h2>
-    <p class="contact-tagline reveal">Got a project in mind?</p>
-    <a href="mailto:hello@malikmotion.dk" class="contact-email reveal">hello@malikmotion.dk</a>
-    <div class="contact-links reveal">
-      <a href="https://malikmotion.dk" target="_blank">malikmotion.dk</a>
-      <a href="https://www.instagram.com/" target="_blank">Instagram</a>
-      <a href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
-      <a href="https://vimeo.com/" target="_blank">Vimeo</a>
+    <div class="stat-cell">
+      <div class="stat-number">24h</div>
+      <div class="stat-label">Always On</div>
     </div>
-  </section>
+    <div class="stat-cell">
+      <div class="stat-number">—</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer>
-    <span class="footer-copy">© 2025 Malik Motion. All rights reserved.</span>
-    <span class="footer-logo">Malik Motion</span>
+    <p>Crafted with intention &nbsp;·&nbsp; <span>StudioBoard</span></p>
+    <div class="footer-line"></div>
+    <p>© 2026 &nbsp;·&nbsp; All rights reserved</p>
   </footer>
 
-  <script>
-    // Cursor
-    const cursor = document.getElementById('cursor');
-    const ring = document.getElementById('cursorRing');
-    let mx = 0, my = 0, rx = 0, ry = 0;
-    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-    function animateCursor() {
-      cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
-      rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
-      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-      requestAnimationFrame(animateCursor);
-    }
-    animateCursor();
-
-    // Scroll reveal
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry, i) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => entry.target.classList.add('visible'), i * 80);
-        }
-      });
-    }, { threshold: 0.1 });
-    reveals.forEach(el => observer.observe(el));
-
-    // Initial hero reveal
-    window.addEventListener('load', () => {
-      document.querySelectorAll('#hero .reveal').forEach((el, i) => {
-        setTimeout(() => el.classList.add('visible'), 300 + i * 150);
-      });
-    });
-  </script>
 </body>
 </html>
